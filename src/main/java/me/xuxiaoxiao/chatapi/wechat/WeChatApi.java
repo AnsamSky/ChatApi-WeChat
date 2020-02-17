@@ -6,7 +6,6 @@ import me.xuxiaoxiao.chatapi.wechat.protocol.*;
 import me.xuxiaoxiao.chatapi.wechat.protocol.ReqBatchGetContact.Contact;
 import me.xuxiaoxiao.chatapi.wechat.utils.WXHttpExecutor;
 import me.xuxiaoxiao.xtools.common.XTools;
-import me.xuxiaoxiao.xtools.common.config.XConfigTools;
 import me.xuxiaoxiao.xtools.common.http.executor.XHttpExecutor;
 import me.xuxiaoxiao.xtools.common.http.executor.impl.XRequest;
 
@@ -32,7 +31,7 @@ final class WeChatApi {
 
     private final long timeInit = System.currentTimeMillis();
     private final AtomicBoolean firstLogin = new AtomicBoolean(true);
-    private final XHttpExecutor httpExecutor = XConfigTools.supply(WXHttpExecutor.class.getName());
+    private final XHttpExecutor httpExecutor = new WXHttpExecutor();
 
     String host;
     String uin;
@@ -104,20 +103,26 @@ final class WeChatApi {
     void webwxnewloginpage(String url) {
         String rspStr = XTools.http(httpExecutor, XRequest.GET(url)).string();
         if (!XTools.strEmpty(rspStr)) {
-            if (rspStr.contains("<wxuin>")) {
-                this.uin = rspStr.substring(rspStr.indexOf("<wxuin>") + "<wxuin>".length(), rspStr.indexOf("</wxuin>"));
-            }
-            if (rspStr.contains("<wxsid>")) {
-                this.sid = rspStr.substring(rspStr.indexOf("<wxsid>") + "<wxsid>".length(), rspStr.indexOf("</wxsid>"));
-            }
-            if (rspStr.contains("<skey>")) {
-                this.skey = rspStr.substring(rspStr.indexOf("<skey>") + "<skey>".length(), rspStr.indexOf("</skey>"));
-            }
-            if (this.skey == null) {
-                this.skey = "";
-            }
-            if (rspStr.contains("<pass_ticket>")) {
-                this.passticket = rspStr.substring(rspStr.indexOf("<pass_ticket>") + "<pass_ticket>".length(), rspStr.indexOf("</pass_ticket>"));
+            String ret = rspStr.substring(rspStr.indexOf("<ret>") + "<ret>".length(), rspStr.indexOf("</ret>"));
+            if (XTools.strEmpty(ret) || "0".equals(ret.trim())) {
+                if (rspStr.contains("<wxuin>")) {
+                    this.uin = rspStr.substring(rspStr.indexOf("<wxuin>") + "<wxuin>".length(), rspStr.indexOf("</wxuin>"));
+                }
+                if (rspStr.contains("<wxsid>")) {
+                    this.sid = rspStr.substring(rspStr.indexOf("<wxsid>") + "<wxsid>".length(), rspStr.indexOf("</wxsid>"));
+                }
+                if (rspStr.contains("<skey>")) {
+                    this.skey = rspStr.substring(rspStr.indexOf("<skey>") + "<skey>".length(), rspStr.indexOf("</skey>"));
+                }
+                if (this.skey == null) {
+                    this.skey = "";
+                }
+                if (rspStr.contains("<pass_ticket>")) {
+                    this.passticket = rspStr.substring(rspStr.indexOf("<pass_ticket>") + "<pass_ticket>".length(), rspStr.indexOf("</pass_ticket>"));
+                }
+            } else {
+                String msg = rspStr.substring(rspStr.indexOf("<message>") + "<message>".length(), rspStr.indexOf("</message>"));
+                throw new RuntimeException(msg);
             }
         }
     }

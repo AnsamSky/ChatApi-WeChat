@@ -28,11 +28,6 @@ public final class WeChatClient {
     public static final String CFG_PREFIX = "me.xuxiaoxiao$chatapi-wechat$";
     public static final String LOG_TAG = "chatapi-wechat";
 
-    public static final String LOGIN_TIMEOUT = "登陆超时";
-    public static final String LOGIN_EXCEPTION = "登陆异常";
-    public static final String INIT_EXCEPTION = "初始化异常";
-    public static final String LISTEN_EXCEPTION = "监听异常";
-
     public static final int STATUS_EXCEPTION = -1;
     public static final int STATUS_READY = 0;
     public static final int STATUS_SCAN = 1;
@@ -207,9 +202,9 @@ public final class WeChatClient {
             Field created = HttpCookie.class.getDeclaredField("whenCreated");
             created.setAccessible(true);
             for (HttpCookie cookie : ((WXHttpExecutor) executor.get(wxAPI)).getCookies()) {
-                sbCookie.append("\n\t过期时间：").append(XTools.dateFormat(XTimeTools.FORMAT_YMDHMS, new Date((long) created.get(cookie) + cookie.getMaxAge() * 1000)));
-                sbCookie.append("，键：").append(cookie.getName());
+                sbCookie.append("\n键：").append(cookie.getName());
                 sbCookie.append("，值：").append(cookie.getValue());
+                sbCookie.append("，过期时间：").append(XTools.dateFormat(XTimeTools.FORMAT_YMDHMS, new Date((long) created.get(cookie) + cookie.getMaxAge() * 1000)));
             }
             XTools.logE(LOG_TAG, sbCookie.toString());
 
@@ -233,7 +228,7 @@ public final class WeChatClient {
             Field syncCheckKey = WeChatApi.class.getDeclaredField("syncCheckKey");
             syncCheckKey.setAccessible(true);
             sbLogin.append("\n\tsyncCheckKey：").append(syncCheckKey.get(wxAPI));
-            XTools.logE(LOG_TAG, sbLogin.toString().replace("%", "%%"));
+            XTools.logE(LOG_TAG, sbLogin.toString());
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -795,16 +790,15 @@ public final class WeChatClient {
                                 break;
                             default:
                                 XTools.logW(LOG_TAG, "登录超时");
-                                return LOGIN_TIMEOUT;
+                                throw new RuntimeException("等待时间过长");
                         }
                     }
                 } else {
                     return null;
                 }
             } catch (Exception e) {
-                e.printStackTrace();
                 XTools.logW(LOG_TAG, e, "登录异常");
-                return LOGIN_EXCEPTION;
+                return e.getMessage();
             }
         }
 
@@ -850,9 +844,8 @@ public final class WeChatClient {
 
                 return null;
             } catch (Exception e) {
-                e.printStackTrace();
-                XTools.logW(LOG_TAG, String.format("初始化异常：%s", e.getMessage()));
-                return INIT_EXCEPTION;
+                XTools.logW(LOG_TAG, e, "初始化异常");
+                return e.getMessage();
             }
         }
 
@@ -871,13 +864,11 @@ public final class WeChatClient {
                         XTools.logD(LOG_TAG, "正在监听信息");
                         rspSyncCheck = wxAPI.synccheck();
                     } catch (Exception e) {
-                        e.printStackTrace();
                         if (retryCount++ < 5) {
                             XTools.logW(LOG_TAG, e, String.format("监听异常，重试第%d次", retryCount));
                             continue;
                         } else {
-                            XTools.logE(LOG_TAG, e, "监听异常，重试次数过多");
-                            return LISTEN_EXCEPTION;
+                            throw e;
                         }
                     }
                     retryCount = 0;
@@ -941,9 +932,8 @@ public final class WeChatClient {
                 }
                 return null;
             } catch (Exception e) {
-                e.printStackTrace();
                 XTools.logW(LOG_TAG, e, "监听消息异常");
-                return LISTEN_EXCEPTION;
+                return e.getMessage();
             }
         }
 

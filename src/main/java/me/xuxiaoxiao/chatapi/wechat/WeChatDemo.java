@@ -33,7 +33,7 @@ public class WeChatDemo {
 
         @Override
         public void onMessage(@Nonnull WeChatClient client, @Nonnull WXMessage message) {
-            System.out.println("获取到消息：" + GSON.toJson(message));
+            System.out.println("onMessage：" + GSON.toJson(message));
 
 //            if (message instanceof WXVerify) {
 //                //是好友请求消息，自动同意好友申请
@@ -61,7 +61,15 @@ public class WeChatDemo {
 
         @Override
         public void onContact(@Nonnull WeChatClient client, @Nullable WXContact oldContact, @Nullable WXContact newContact) {
-            System.out.println(String.format("检测到联系人变更:旧联系人名称：%s:新联系人名称：%s", (oldContact == null ? "null" : oldContact.name), (newContact == null ? "null" : newContact.name)));
+            if (oldContact != null && newContact != null) {
+                System.out.println(String.format("检测到联系人变更：%s", oldContact.name));
+            } else if (oldContact != null || newContact != null) {
+                if (oldContact != null) {
+                    System.out.println(String.format("检测到删除联系人：%s", oldContact.name));
+                } else {
+                    System.out.println(String.format("检测到新增联系人：%s", newContact.name));
+                }
+            }
         }
     };
 
@@ -131,8 +139,8 @@ public class WeChatDemo {
                         System.out.println("serverMsgId:");
                         String serverMsgId = scanner.nextLine();
                         WXUnknown wxUnknown = new WXUnknown();
-                        wxUnknown.id = Long.valueOf(serverMsgId);
-                        wxUnknown.idLocal = Long.valueOf(clientMsgId);
+                        wxUnknown.id = Long.parseLong(serverMsgId);
+                        wxUnknown.idLocal = Long.parseLong(clientMsgId);
                         wxUnknown.toContact = wechatClient.userContact(toContactId);
                         wechatClient.revokeMsg(wxUnknown);
                     }
@@ -168,7 +176,7 @@ public class WeChatDemo {
                         String isTop = scanner.nextLine();
                         WXContact contact = wechatClient.userContact(contactId);
                         if (contact != null) {
-                            wechatClient.topContact(contact, Boolean.valueOf(isTop.toLowerCase()));
+                            wechatClient.topContact(contact, Boolean.parseBoolean(isTop.toLowerCase()));
                         } else {
                             System.out.println("联系人未找到");
                         }

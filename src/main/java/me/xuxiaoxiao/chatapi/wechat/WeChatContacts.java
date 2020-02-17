@@ -5,19 +5,21 @@ import me.xuxiaoxiao.chatapi.wechat.entity.contact.WXGroup;
 import me.xuxiaoxiao.chatapi.wechat.entity.contact.WXUser;
 import me.xuxiaoxiao.chatapi.wechat.protocol.RspInit;
 
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.util.HashMap;
 
 /**
  * 模拟网页微信客户端联系人
  */
-@SuppressWarnings("unchecked")
 final class WeChatContacts {
     private final HashMap<String, WXContact> contacts = new HashMap<>();
     private final HashMap<String, WXUser> friends = new HashMap<>();
     private final HashMap<String, WXGroup> groups = new HashMap<>();
     private WXUser me;
 
-    private static <T extends WXContact> T parseContact(String host, RspInit.User contact) {
+    @Nonnull
+    private static <T extends WXContact> T parseContact(@Nonnull String host, @Nonnull RspInit.User contact) {
         if (contact.UserName.startsWith("@@")) {
             WXGroup group = new WXGroup();
             group.id = contact.UserName;
@@ -36,6 +38,7 @@ final class WeChatContacts {
                 member.display = user.DisplayName;
                 group.members.put(member.id, member);
             }
+            //noinspection unchecked
             return (T) group;
         } else {
             WXUser user = new WXUser();
@@ -53,6 +56,7 @@ final class WeChatContacts {
             user.province = contact.Province;
             user.city = contact.City;
             user.verifyFlag = contact.VerifyFlag;
+            //noinspection unchecked
             return (T) user;
         }
     }
@@ -62,6 +66,7 @@ final class WeChatContacts {
      *
      * @return 自身信息
      */
+    @Nullable
     WXUser getMe() {
         return this.me;
     }
@@ -72,7 +77,8 @@ final class WeChatContacts {
      * @param id 好友id
      * @return 好友信息
      */
-    WXUser getFriend(String id) {
+    @Nullable
+    WXUser getFriend(@Nonnull String id) {
         return this.friends.get(id);
     }
 
@@ -81,6 +87,7 @@ final class WeChatContacts {
      *
      * @return 所有好友
      */
+    @Nonnull
     HashMap<String, WXUser> getFriends() {
         return this.friends;
     }
@@ -91,7 +98,8 @@ final class WeChatContacts {
      * @param id 群id
      * @return 群信息
      */
-    WXGroup getGroup(String id) {
+    @Nullable
+    WXGroup getGroup(@Nonnull String id) {
         return this.groups.get(id);
     }
 
@@ -100,6 +108,7 @@ final class WeChatContacts {
      *
      * @return 所有群
      */
+    @Nonnull
     HashMap<String, WXGroup> getGroups() {
         return this.groups;
     }
@@ -110,7 +119,8 @@ final class WeChatContacts {
      * @param userId 联系人id
      * @return 联系人信息
      */
-    WXContact getContact(String userId) {
+    @Nullable
+    WXContact getContact(@Nonnull String userId) {
         return this.contacts.get(userId);
     }
 
@@ -119,12 +129,12 @@ final class WeChatContacts {
      *
      * @param userMe 自身信息
      */
-    void setMe(String host, RspInit.User userMe) {
+    void setMe(@Nonnull String host, @Nonnull RspInit.User userMe) {
         this.me = WeChatContacts.parseContact(host, userMe);
         this.contacts.put(this.me.id, this.me);
     }
 
-    void putContact(String host, RspInit.User userContact) {
+    void putContact(@Nonnull String host, @Nonnull RspInit.User userContact) {
         WXContact contact = WeChatContacts.parseContact(host, userContact);
         this.contacts.put(contact.id, contact);
         if (contact instanceof WXGroup) {
@@ -143,7 +153,8 @@ final class WeChatContacts {
      *
      * @param userId 联系人id
      */
-    WXContact rmvContact(String userId) {
+    @Nullable
+    WXContact rmvContact(@Nonnull String userId) {
         this.groups.remove(userId);
         this.friends.remove(userId);
         return this.contacts.remove(userId);

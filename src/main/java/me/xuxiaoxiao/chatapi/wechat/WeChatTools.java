@@ -2,6 +2,8 @@ package me.xuxiaoxiao.chatapi.wechat;
 
 import me.xuxiaoxiao.xtools.common.http.executor.impl.XRequest;
 
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -17,7 +19,8 @@ final class WeChatTools {
      * @param file 需要判断的文件
      * @return 文件的media类型
      */
-    public static String fileType(File file) {
+    @Nonnull
+    public static String fileType(@Nullable File file) {
         switch (WeChatTools.fileSuffix(file)) {
             case "bmp":
             case "png":
@@ -37,32 +40,36 @@ final class WeChatTools {
      * @param file 要获取文件扩展名的文件
      * @return 文件扩展名
      */
-    public static String fileSuffix(File file) {
-        try (FileInputStream is = new FileInputStream(file)) {
-            byte[] b = new byte[3];
-            is.read(b, 0, b.length);
-            String fileCode = bytesToHex(b);
-
-            switch (fileCode) {
-                case "ffd8ff":
-                    return "jpg";
-                case "89504e":
-                    return "png";
-                case "474946":
-                    return "gif";
-                default:
-                    if (fileCode.startsWith("424d")) {
-                        return "bmp";
-                    } else if (file.getName().lastIndexOf('.') > 0) {
-                        return file.getName().substring(file.getName().lastIndexOf('.') + 1);
-                    } else {
-                        return "";
+    @Nonnull
+    public static String fileSuffix(@Nullable File file) {
+        if (file != null) {
+            try (FileInputStream is = new FileInputStream(file)) {
+                byte[] b = new byte[3];
+                if (is.read(b, 0, b.length) > 0) {
+                    String fileCode = bytesToHex(b);
+                    switch (fileCode) {
+                        case "ffd8ff":
+                            return "jpg";
+                        case "89504e":
+                            return "png";
+                        case "474946":
+                            return "gif";
+                        default: {
+                            String suffix = "";
+                            if (fileCode.startsWith("424d")) {
+                                suffix = "bmp";
+                            } else if (file.getName().lastIndexOf('.') > 0) {
+                                suffix = file.getName().substring(file.getName().lastIndexOf('.') + 1);
+                            }
+                            return suffix;
+                        }
                     }
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
             }
-        } catch (IOException e) {
-            e.printStackTrace();
-            return "";
         }
+        return "";
     }
 
     /**
@@ -71,7 +78,8 @@ final class WeChatTools {
      * @param bytes 要转换的字节数组
      * @return 转换后的字符串，全小写字母
      */
-    private static String bytesToHex(byte[] bytes) {
+    @Nonnull
+    private static String bytesToHex(@Nonnull byte[] bytes) {
         char[] chars = new char[bytes.length * 2];
         for (int i = 0; i < bytes.length; i++) {
             byte b = bytes[i];
@@ -89,17 +97,28 @@ final class WeChatTools {
         /**
          * 文件名称
          */
+        @Nonnull
         public String fileName;
         /**
          * 文件的MIME类型
          */
+        @Nonnull
         public String fileMime;
         /**
          * 字节数组内容的数量，字节数组大小总是512K而实际内容可能并没有这么多
          */
         public int count;
 
-        public Slice(String name, String fileName, String fileMime, byte[] slice, int count) {
+        /**
+         * 文件分片构造器
+         *
+         * @param name     partName
+         * @param fileName 文件名称
+         * @param fileMime 文件Mime
+         * @param slice    分片数组
+         * @param count    分片数组中内容的数量
+         */
+        public Slice(@Nonnull String name, @Nonnull String fileName, @Nonnull String fileMime, @Nonnull byte[] slice, int count) {
             super(name, slice);
             this.fileName = fileName;
             this.fileMime = fileMime;
@@ -107,6 +126,7 @@ final class WeChatTools {
         }
 
         @Override
+        @Nonnull
         public String[] headers() throws IOException {
             String disposition = String.format("Content-Disposition: form-data; name=\"%s\"; filename=\"%s\"", name, URLEncoder.encode(fileName, "utf-8"));
             String type = String.format("Content-Type: %s", fileMime);
@@ -119,8 +139,10 @@ final class WeChatTools {
         }
 
         @Override
-        public void partWrite(OutputStream doStream) throws IOException {
-            doStream.write((byte[]) value, 0, count);
+        public void partWrite(@Nonnull OutputStream doStream) throws IOException {
+            if (value != null) {
+                doStream.write((byte[]) value, 0, count);
+            }
         }
     }
 }
